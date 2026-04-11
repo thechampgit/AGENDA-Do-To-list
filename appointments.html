@@ -1,0 +1,214 @@
+S<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda | Appointments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .appointment-input-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap; 
+        }
+
+        .appointment-input-wrapper input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .appointment-time-input {
+            background: rgba(255, 255, 255, 0.6); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            padding: 1rem; 
+            color: var(--text-main); 
+            font-family: inherit; 
+            font-size: 1rem; 
+            outline: none; 
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .appointment-time-input:focus {
+            border-color: var(--primary);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(255, 42, 95, 0.2);
+        }
+
+        #addAppointmentBtn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        #addAppointmentBtn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(208, 39, 82, 0.3);
+        }
+
+        .time-badge {
+            background: rgba(208, 39, 82, 0.1); 
+            color: var(--primary-dark); 
+            padding: 0.4rem 0.8rem; 
+            border-radius: 6px; 
+            font-weight: 700; 
+            font-size: 0.85rem; 
+            margin-right: 0.5rem;
+        }
+
+        @media (max-width: 480px) {
+            .appointment-time-input {
+                flex: 1;
+            }
+            #addAppointmentBtn {
+                width: 100%;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="app-container">
+        <header class="app-header">
+            <div class="top-nav simple-nav">
+                <a href="index.html" class="nav-btn transition-link">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    <span>Back</span>
+                </a>
+            </div>
+            <div class="logo-area" style="justify-content: center;">
+                <span style="font-size: 1.5rem; margin-right: 0.5rem; color: var(--primary-dark); margin-top: 0.3rem;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </span>
+                <h1>Appointments</h1>
+            </div>
+            <p class="subtitle">Keep track of your scheduled moments</p>
+        </header>
+
+        <section class="input-section">
+            <div class="appointment-input-wrapper">
+                <input type="text" id="appointmentInput" placeholder="Who / What with?" autocomplete="off">
+                <input type="time" id="appointmentTime" class="appointment-time-input">
+                <button id="addAppointmentBtn" aria-label="Add Appointment">
+                    Add
+                </button>
+            </div>
+        </section>
+
+        <section class="task-section">
+            <ul id="appointmentList" class="task-list">
+                <!-- Appointments will be injected here -->
+            </ul>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const appointmentInput = document.getElementById('appointmentInput');
+            const appointmentTime = document.getElementById('appointmentTime');
+            const addAppointmentBtn = document.getElementById('addAppointmentBtn');
+            const appointmentList = document.getElementById('appointmentList');
+
+            let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+
+            renderAppointments();
+
+            addAppointmentBtn.addEventListener('click', addAppointment);
+            appointmentInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addAppointment();
+            });
+
+            function addAppointment() {
+                const text = appointmentInput.value.trim();
+                const time = appointmentTime.value;
+                if (text && time) {
+                    const newAppt = {
+                        id: Date.now(),
+                        text: text,
+                        time: time,
+                    };
+                    appointments.push(newAppt);
+                    
+                    // Sort appointments by time
+                    appointments.sort((a, b) => a.time.localeCompare(b.time));
+                    
+                    appointmentInput.value = '';
+                    appointmentTime.value = '';
+                    saveAndRender();
+                } else {
+                    alert('Please enter both an appointment description and a time.');
+                }
+            }
+
+            function deleteAppointment(id) {
+                const element = document.querySelector(`[data-id="${id}"]`);
+                element.style.transform = 'scale(0.95) translateX(-20px)';
+                element.style.opacity = '0';
+                
+                setTimeout(() => {
+                    appointments = appointments.filter(appt => appt.id !== id);
+                    saveAndRender();
+                }, 300);
+            }
+
+            function saveAndRender() {
+                localStorage.setItem('appointments', JSON.stringify(appointments));
+                renderAppointments();
+            }
+
+            function formatTime(timeString) {
+                const [hr, min] = timeString.split(':');
+                let h = parseInt(hr);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                return `${h}:${min} ${ampm}`;
+            }
+
+            function renderAppointments() {
+                appointmentList.innerHTML = '';
+
+                if (appointments.length === 0) {
+                    appointmentList.innerHTML = '<p style="text-align:center; color: var(--text-muted); margin-top:2rem;">No appointments scheduled yet.</p>';
+                    return;
+                }
+
+                appointments.forEach(appt => {
+                    const li = document.createElement('li');
+                    li.className = 'task-item';
+                    li.dataset.id = appt.id;
+                    
+                    li.innerHTML = `
+                        <div class="time-badge">${formatTime(appt.time)}</div>
+                        <span class="task-text" style="font-weight: 500;">${appt.text}</span>
+                        <button class="delete-btn" aria-label="Delete appointment">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    `;
+
+                    const delBtn = li.querySelector('.delete-btn');
+                    delBtn.addEventListener('click', () => deleteAppointment(appt.id));
+
+                    appointmentList.appendChild(li);
+                });
+            }
+        });
+    </script>
+    <script src="transition.js"></script>
+</body>
+</html>
